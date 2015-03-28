@@ -1,8 +1,8 @@
 <?php
 
-define('MAX_DEPTH', 5);
+define('MAX_DEPTH', 3);
 
-$imageFile = 'http://cdn.awwni.me/pz02.jpg';
+$imageFile = 'http://animalia-life.com/data_images/fish/fish3.jpg';
 
 function getRGBFromColor($color, &$r, &$g, &$b) {
     $r = ($color & 0xff0000) >> 16;
@@ -10,6 +10,12 @@ function getRGBFromColor($color, &$r, &$g, &$b) {
     $b = $color & 0xff;
 }
 
+/**
+ * Calculates the distance between two colors
+ * @param int $color1 The first color
+ * @param int $color2 The second color
+ * @return int The distance between the two colors
+ */
 function colorDistance($color1, $color2) {
     $r1 = 0; $g1 = 0; $b1 = 0;
     getRGBFromColor($color1, $r1, $g1, $b1);
@@ -50,7 +56,7 @@ function drawBorder($img, $borderMask = 0b1111) {
     }
 }
 
-function processRect($src, $depth = 0) {
+function processRect($src, $depth = 0, &$tiles = 0) {
 
     $width = imagesx($src);
     $height = imagesy($src);
@@ -103,13 +109,14 @@ function processRect($src, $depth = 0) {
 
             $avgDist = $avgDist / $pixels;
 
-            if ($avgDist > 40 && $depth < MAX_DEPTH) {
+            if ($avgDist > 40 && $depth < MAX_DEPTH && $sectorWidth > 2 && $sectorHeight > 2) {
                 imagecopy($sectorImg, $src, 0, 0, $xOffset, $yOffset, $sectorWidth, $sectorHeight);
-                imagecopy($retVal, processRect($sectorImg, $depth + 1), $xOffset, $yOffset, 0, 0, $sectorWidth, $sectorHeight);
+                imagecopy($retVal, processRect($sectorImg, $depth + 1, $tiles), $xOffset, $yOffset, 0, 0, $sectorWidth, $sectorHeight);
             } else {
                 imagefill($sectorImg, 0, 0, $avgColor);
                 drawBorder($sectorImg, 0b1001);
                 imagecopy($retVal, $sectorImg, $xOffset, $yOffset, 0, 0, $sectorWidth, $sectorHeight);
+                $tiles++;
             }
 
             imagedestroy($sectorImg);
@@ -120,6 +127,7 @@ function processRect($src, $depth = 0) {
     // Draw the right and bottom edges on the first call
     if ($depth === 0) {
         drawBorder($retVal, 0b0110);
+        echo 'Tiles drawn: ', $tiles, PHP_EOL;
     }
 
     return $retVal;
